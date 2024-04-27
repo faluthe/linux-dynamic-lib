@@ -1,0 +1,4 @@
+.vscode/
+*.so
+*.log
+hello
