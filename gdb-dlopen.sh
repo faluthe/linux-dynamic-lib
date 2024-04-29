@@ -31,4 +31,4 @@ fi
 
 echo "Process ID: $PROCID"
 
-gdb -n --batch -ex "attach $PROCID" -ex "call dlopen(\"$LIB_PATH\", 1)" -ex "detach" > /dev/null 2>&1
+gdb -n --batch -ex "attach $PROCID" -ex "call ((void * (*) (const char*, int)) dlopen)(\"$LIB_PATH\", 1)" -ex "detach"
