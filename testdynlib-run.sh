@@ -12,5 +12,5 @@ gcc -shared -fpic testdynlib.c -o testdynlib.so
 
 DISABLE_QUIT=1 ./dummyproc < /dev/null &
 echo -n
-sudo ./gdb-dlopen.sh
+sudo bash gdb-dlopen.sh
 wait
