@@ -6,11 +6,11 @@ cleanup() {
 
 trap cleanup EXIT
 
-gcc hello.c -o hello
+gcc dummyproc.c -o dummyproc
 gcc -shared -fpic dummylib.c -o dummylib.so
 gcc -shared -fpic testdynlib.c -o testdynlib.so
 
-DISABLE_QUIT=1 ./hello < /dev/null &
+DISABLE_QUIT=1 ./dummyproc < /dev/null &
 echo -n
 sudo ./gdb-dlopen.sh
 wait

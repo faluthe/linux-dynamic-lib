@@ -1,7 +1,8 @@
 #!/bin/bash
 
-LIB_PATH=$(pwd)/testdynlib.so
-PROCID=$(pgrep hello)
+LIB_NAME=testdynlib
+LIB_PATH=$(pwd)/$LIB_NAME.so
+PROCID=$(pgrep dummyproc | head -n 1)
 
 # Verify permissions
 if [[ "$EUID" -ne 0 ]]; then
@@ -15,13 +16,11 @@ if [ ! -f "$LIB_PATH" ]; then
     exit 1
 fi
 
-# Check if library is already loaded (dont print anything)
+# Check if library is already loaded
 if lsof -p $PROCID 2> /dev/null | grep -q $LIB_PATH; then
     echo "Library is already loaded"
     exit 1
 fi
-
-echo "Library path: $LIB_PATH"
 
 # Check if the process is running
 if [ -z "$PROCID" ]; then
@@ -29,6 +28,32 @@ if [ -z "$PROCID" ]; then
     exit 1
 fi
 
-echo "Process ID: $PROCID"
+unload() {
+    echo -e "\nUnloading library..."
 
-gdb -n --batch -ex "attach $PROCID" -ex "call ((void * (*) (const char*, int)) dlopen)(\"$LIB_PATH\", 1)" -ex "detach"
+    if [ -z "$LIB_HANDLE" ]; then
+        echo "Handle not found"
+        exit 1
+    fi
+
+    gdb -n --batch -ex "attach $PROCID" \
+                   -ex "call ((int (*) (void *)) dlclose)((void *) $LIB_HANDLE)" \
+                   -ex "detach" > /dev/null 2>&1
+
+    echo "Library has been unloaded!"
+}
+
+trap unload SIGINT
+
+LIB_HANDLE=$(gdb -n --batch -ex "attach $PROCID" \
+                            -ex "call ((void * (*) (const char*, int)) dlopen)(\"$LIB_PATH\", 1)" \
+                            -ex "detach" 2> /dev/null | grep -oP '\$1 = \(void \*\) \K0x[0-9a-f]+')
+
+if [ -z "$LIB_HANDLE" ]; then
+    echo "Failed to load library"
+    exit 1
+fi
+
+echo "Library loaded successfully at $LIB_HANDLE. Use Ctrl+C to unload."
+
+tail -f ./$LIB_NAME.log
